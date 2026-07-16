@@ -1,4 +1,3 @@
-// src/screens/main/SplashScreen.tsx
 import { useEffect } from 'react';
 import {
     View,
