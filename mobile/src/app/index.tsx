@@ -44,6 +44,5 @@ export default function Index() {
       </View>
     );
   }
-
   return null; 
 }
