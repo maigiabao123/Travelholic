@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   temp: { fontSize: 26, fontWeight: '700', color: '#111827' },
   desc: { fontSize: 13, color: '#6B7280' },
   meta: { justifyContent: 'center', alignItems: 'flex-end' },
-  metaText: { fontSize: 11, color: '#6B7280' },
+  metaText: { fontSize: 11, color: '#232425' },
 });
 
 export default WeatherCard;

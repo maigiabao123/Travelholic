@@ -1,4 +1,4 @@
-// src/screens/main/HomeScreen.tsx (đặt ở nơi bạn muốn, ví dụ app/(main)/home.tsx)
+// src/screens/main/HomeScreen.tsx 
 import React from 'react';
 import {
   ScrollView,
