@@ -1,2 +1,2 @@
-import HomeScreen from '../screens/main/HomeScreen';
-export default HomeScreen;
+import LoginScreen from '../screens/auth/LoginScreen';
+export default LoginScreen;
