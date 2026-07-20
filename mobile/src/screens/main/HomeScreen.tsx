@@ -19,28 +19,18 @@ import StatisticCard from '@/components/profile/StatisticCard';
 import TripCard from '@/components/trip/TripCard';
 import WeatherCard from '@/components/trip/WeatherCard';
 
+import { Home, Briefcase, Plus, Map, User } from 'lucide-react-native';
+
 const CURRENT_TRIP_ID = '1';
 
-const footerTabs = [
-  { key: 'home', label: 'Home', icon: 'home-outline', route: '/' },
-  { key: 'trips', label: 'Trips', icon: 'briefcase-outline', route: '/trips' },
-  { key: 'map', label: 'Map', icon: 'map-outline', route: '/map' },
-  { key: 'profile', label: 'Profile', icon: 'person-outline', route: '/profile' },
-];
-
 const quickActions = [
-  { label: 'New Trip',  short: '+', bg: '#E6F7F0', route: `/booking/${CURRENT_TRIP_ID}` },
   { label: 'Itinerary', short: 'I', bg: '#EEF4FF', route: `/itinerary/${CURRENT_TRIP_ID}` },
-  { label: 'Expense',   short: '$', bg: '#FFF4E4', route: `/expenses/${CURRENT_TRIP_ID}` },
+  { label: 'Expense', short: '$', bg: '#FFF4E4', route: `/expenses/${CURRENT_TRIP_ID}` },
   { label: 'Checklist', short: 'C', bg: '#FDEBF4', route: `/checklist/${CURRENT_TRIP_ID}` },
-  { label: 'Map',       short: 'M', bg: '#E5F3FF', route: '/map' },
+  { label: 'Map', short: 'M', bg: '#E5F3FF', route: '/map' },
 ];
 
 export default function HomeScreen() {
-  const handleTabPress = (route: string) => {
-    router.push(route as any);
-  };
-
   const handleQuickActionPress = (route: string) => {
     router.push(route as any);
   };
@@ -71,15 +61,18 @@ export default function HomeScreen() {
           title="Upcoming Trip"
           actionLabel="View all"
           onPressAction={() => router.push('/trips')}
-          containerStyle={{ marginTop: 22 }}
+          containerStyle={{ marginTop: 22, marginBottom: 20 }}
         />
+
+        {/* TripCard đã được cập nhật theo component mới */}
         <TripCard
-          dateDay="22"
-          dateMonth="AUG"
-          imageUri="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress"
-          title="Da Nang, Vietnam"
-          subtitle="22 Aug – 25 Aug 2024"
-          onPress={() => router.push(`/trips/${CURRENT_TRIP_ID}`)}
+          id={CURRENT_TRIP_ID}
+          image="https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress"
+          title="Da Nang Beach Getaway"
+          location="Da Nang, Vietnam"
+          dateRange="22 Aug – 25 Aug 2024"
+          price={800}
+          status="Upcoming"
         />
 
         {/* Weather */}
@@ -109,29 +102,31 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Bottom tabs giữ nguyên vào đây */}
-      <View style={styles.bottomTabs}>
-        {footerTabs.map(tab => (
-          <TouchableOpacity
-            key={tab.key}
-            style={styles.tabItem}
-            onPress={() => handleTabPress(tab.route)}
-          >
-            <Ionicons
-              name={tab.icon as any}
-              size={22}
-              color={tab.key === 'home' ? '#2563EB' : '#9CA3AF'}
-            />
-            <Text
-              style={[
-                styles.tabLabel,
-                tab.key === 'home' && styles.tabLabelActive,
-              ]}
-            >
-              {tab.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      {/* Bottom Bar - Giống TripsListScreen */}
+      <View style={styles.bottomBar}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/')}>
+          <Home size={24} color="#2563EB" />
+          <Text style={[styles.tabText, styles.activeTabText]}>Home</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/trips')}>
+          <Briefcase size={24} color="#9CA3AF" />
+          <Text style={styles.tabText}>Trips</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.addButton}>
+          <Plus size={32} color="white" />
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/map')}>
+          <Map size={24} color="#9CA3AF" />
+          <Text style={styles.tabText}>Map</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile')}>
+          <User size={24} color="#9CA3AF" />
+          <Text style={styles.tabText}>Profile</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -145,7 +140,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 80,
+    paddingBottom: 90, // Tăng để tránh bị bottom bar che
   },
   greeting: { marginTop: 20 },
   helloText: { fontSize: 22, fontWeight: '700', color: '#111827' },
@@ -174,21 +169,47 @@ const styles = StyleSheet.create({
   tipTitle: { fontSize: 14, fontWeight: '600', color: '#111827' },
   tipDesc: { marginTop: 4, fontSize: 11, color: '#6B7280' },
 
-  bottomTabs: {
+  /* ==================== BOTTOM BAR ==================== */
+  bottomBar: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: 64,
-    paddingHorizontal: 30,
-    backgroundColor: '#FFFFFF',
+    height: 70,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#E5E7EB',
+    justifyContent: 'space-around',
+    paddingHorizontal: 10,
   },
-  tabItem: { alignItems: 'center' },
-  tabLabel: { fontSize: 11, color: '#9CA3AF' },
-  tabLabelActive: { color: '#2563EB', fontWeight: '600' },
-});
+  tabItem: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  tabText: {
+    fontSize: 11,
+    marginTop: 4,
+    color: '#9CA3AF',
+  },
+  activeTabText: {
+    color: '#2563EB',
+    fontWeight: '600',
+  },
+  addButton: {
+    backgroundColor: '#3b82f6',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 30,
+    shadowColor: '#3b82f6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+});``
