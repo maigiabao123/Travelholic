@@ -13,7 +13,7 @@ export default function SplashScreen() {
     useEffect(() => {
         const timer = setTimeout(() => {
             // Sau khi load xong chuyển sang Home
-            router.replace('/');
+            router.replace('/home');
         }, 2000);
 
         return () => clearTimeout(timer);

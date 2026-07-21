@@ -8,28 +8,31 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AppInput from '@/components/ui/AppInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
 export default function LoginScreen() {
-  // Đăng nhập bằng name (cột name trong bảng users)
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
+  const isWeb = Platform.OS === 'web';
+  const API_BASE_URL = isWeb
+    ? 'http://localhost:5000'
+    : 'http://10.0.2.2:5000'; // Android emulator; đổi sang IP máy nếu dùng device thật
+
   const handleLogin = async () => {
-    const payload = {
-      name,       // backend: data.get("name")
-      password,   // backend: data.get("password")
-    };
+    const payload = { name, password };
+    console.log('Login payload:', payload);
 
     try {
-      const res = await fetch('http://localhost:5000/api/login', {
+      const res = await fetch(`${API_BASE_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -45,12 +48,20 @@ export default function LoginScreen() {
       const token = data.token;
       const user = data.user;
 
-      // Lưu JWT token để dùng cho các API khác (ví dụ tạo trip)
-      await AsyncStorage.setItem('authToken', token);
+      // Lưu token bằng SecureStore (Expo)
+      await SecureStore.setItemAsync('authToken', token);
 
-      Alert.alert('Thành công', `Xin chào ${user.name}`);
-      // Điều hướng sau login nếu muốn:
-      // router.replace('/'); 
+      Alert.alert('Thành công', `Xin chào ${user.name}`, [
+        {
+          text: 'OK',
+          onPress: () => {
+            // TODO: Đổi route này cho đúng màn Home của bạn
+            // nếu hiện tại bạn dùng create-trip làm home:
+            // router.replace('/create-trip');
+            router.replace('/home');
+          },
+        },
+      ]);
     } catch (error) {
       Alert.alert('Lỗi', (error as Error).message);
     }
@@ -108,7 +119,7 @@ export default function LoginScreen() {
         />
 
         {/* Divider */}
-        <View className="divider">
+        <View style={styles.divider}>
           <View style={styles.line} />
           <Text style={styles.orText}>or continue with</Text>
           <View style={styles.line} />

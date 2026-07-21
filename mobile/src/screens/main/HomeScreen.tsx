@@ -40,7 +40,8 @@ export default function HomeScreen() {
       <AppHeader
         avatarUri="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress"
         showNotificationDot
-        onMenuPress={() => {}}
+        onAvatarPress={() => router.push('/profile')}
+        onMenuPress={() => { /* giữ cho nút menu nếu cần */ }}
       />
 
       <ScrollView
@@ -135,11 +136,12 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
+    marginTop: -50,
     backgroundColor: '#F5F7FB',
   },
   scrollContent: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 6,
     paddingBottom: 90, // Tăng để tránh bị bottom bar che
   },
   greeting: { marginTop: 20 },
@@ -170,19 +172,25 @@ const styles = StyleSheet.create({
   tipDesc: { marginTop: 4, fontSize: 11, color: '#6B7280' },
 
   /* ==================== BOTTOM BAR ==================== */
+  /* ==================== BOTTOM BAR ==================== */
   bottomBar: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: 16,
+    right: 16,
+    bottom: 16,
     height: 70,
-    backgroundColor: 'white',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 32,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
     paddingHorizontal: 10,
+    // Shadow giống profile
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   tabItem: {
     alignItems: 'center',
@@ -199,17 +207,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addButton: {
-    backgroundColor: '#3b82f6',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    backgroundColor: '#2563EB',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 30,
-    shadowColor: '#3b82f6',
+    marginHorizontal: 8,
+    // nổi lên một chút
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 8,
     elevation: 8,
   },
-});``
+}); ``

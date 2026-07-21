@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AppInput from '@/components/ui/AppInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
-
+import { Platform } from 'react-native';
 export default function RegisterScreen() {
   const [fullName, setFullName] = useState('');   // dùng làm name
   const [email, setEmail] = useState('');
@@ -22,7 +22,10 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const router = useRouter();
-
+  const isWeb = Platform.OS === 'web';
+  const API_BASE_URL = isWeb
+    ? 'http://localhost:5000'
+    : 'http://10.0.2.2:5000';
   const handleSignup = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
@@ -44,7 +47,7 @@ export default function RegisterScreen() {
     };
 
     try {
-      const res = await fetch('http://localhost:5000/api/signup', {
+      const res = await fetch(`${API_BASE_URL}/api/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

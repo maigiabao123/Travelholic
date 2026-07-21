@@ -8,17 +8,33 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import DateTimePicker, {
+  DateTimePickerEvent,
+} from '@react-native-community/datetimepicker';
 
 type TravelType = 'Solo' | 'Couple' | 'Family' | 'Friends' | 'Business';
+
 const currencyOptions = ['VND', 'USD', 'AUD', 'EUR', 'GBP', 'JPY', 'CNY'];
+
+async function getToken() {
+  try {
+    const value = await SecureStore.getItemAsync('authToken');
+    return value;
+  } catch (e) {
+    console.log('SecureStore error:', e);
+    return null;
+  }
+}
 
 export default function CreateTripScreen() {
   const router = useRouter();
+
   const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
   const [country, setCountry] = useState('');
@@ -32,21 +48,50 @@ export default function CreateTripScreen() {
   const [transportation, setTransportation] = useState('');
   const [hotel, setHotel] = useState('');
 
+  // Date picker state
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+
+  const isWeb = Platform.OS === 'web';
+
+  const API_BASE_URL = isWeb
+    ? 'http://localhost:5000'
+    : 'http://10.0.2.2:5000';
+
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`; // YYYY-MM-DD
+  };
+
+  const onChangeStart = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowStartPicker(false);
+    if (selectedDate) {
+      setStartDate(formatDate(selectedDate));
+    }
+  };
+
+  const onChangeEnd = (event: DateTimePickerEvent, selectedDate?: Date) => {
+    setShowEndPicker(false);
+    if (selectedDate) {
+      setEndDate(formatDate(selectedDate));
+    }
+  };
+
   const handleCreateTrip = async () => {
-    // validate đơn giản
     if (!tripName || !destination || !country || !startDate || !endDate || !budget) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin bắt buộc');
       return;
     }
 
     try {
-      const token = await AsyncStorage.getItem('authToken');
+      const token = await getToken();
       if (!token) {
         Alert.alert('Lỗi', 'Bạn chưa đăng nhập');
         return;
       }
 
-      // Payload khớp với insert_trip trong db.py
       const payload = {
         name: tripName,
         destination,
@@ -59,10 +104,10 @@ export default function CreateTripScreen() {
         travel_type: travelType,
         transportation_type: transportation,
         hotel_name: hotel,
-        cover_image_url: null, // chưa upload ảnh, để null
+        cover_image_url: null,
       };
 
-      const res = await fetch('http://localhost:5000/api/trips', {
+      const res = await fetch(`${API_BASE_URL}/api/trips`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -72,7 +117,6 @@ export default function CreateTripScreen() {
       });
 
       const data = await res.json().catch(() => null);
-
       if (!res.ok) {
         const msg = data?.message || 'Tạo trip thất bại';
         throw new Error(msg);
@@ -81,7 +125,7 @@ export default function CreateTripScreen() {
       Alert.alert('Thành công', 'Tạo trip thành công!', [
         {
           text: 'OK',
-          onPress: () => router.back(), // hoặc điều hướng tới màn danh sách trip
+          onPress: () => router.back(),
         },
       ]);
     } catch (error) {
@@ -151,22 +195,52 @@ export default function CreateTripScreen() {
         <View style={styles.row}>
           <View style={styles.flex1}>
             <FormLabel required>Start Date</FormLabel>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={startDate}
-              onChangeText={setStartDate}
-            />
+            <TouchableOpacity
+              onPress={() => !isWeb && setShowStartPicker(true)}
+              activeOpacity={0.7}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="YYYY-MM-DD"
+                value={startDate}
+                editable={isWeb} // mobile dùng picker, web vẫn gõ tay
+                onChangeText={text => isWeb && setStartDate(text)}
+              />
+            </TouchableOpacity>
+            {!isWeb && showStartPicker && (
+              <DateTimePicker
+                value={startDate ? new Date(startDate) : new Date()}
+                mode="date"
+                display="default"
+                onChange={onChangeStart}
+              />
+            )}
           </View>
+
           <View style={styles.gap} />
+
           <View style={styles.flex1}>
             <FormLabel required>End Date</FormLabel>
-            <TextInput
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              value={endDate}
-              onChangeText={setEndDate}
-            />
+            <TouchableOpacity
+              onPress={() => !isWeb && setShowEndPicker(true)}
+              activeOpacity={0.7}
+            >
+              <TextInput
+                style={styles.input}
+                placeholder="YYYY-MM-DD"
+                value={endDate}
+                editable={isWeb}
+                onChangeText={text => isWeb && setEndDate(text)}
+              />
+            </TouchableOpacity>
+            {!isWeb && showEndPicker && (
+              <DateTimePicker
+                value={endDate ? new Date(endDate) : new Date()}
+                mode="date"
+                display="default"
+                onChange={onChangeEnd}
+              />
+            )}
           </View>
         </View>
 

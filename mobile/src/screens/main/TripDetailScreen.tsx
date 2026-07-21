@@ -24,7 +24,7 @@ const TripDetailScreen: React.FC = () => {
   const goChecklist = () =>
     router.push({ pathname: '/checklist/[tripId]', params: { tripId } });
   const goBooking = () =>
-    router.push({ pathname: '/booking/[tripId]', params: { tripId } });
+    router.push({ pathname: '/booking/create', params: { tripId } });
 
   return (
     <View style={styles.container}>

@@ -1,39 +1,13 @@
-from flask import Blueprint, request, jsonify, current_app
-import jwt
-
+from flask import Blueprint, request, jsonify
 from db import insert_trip
+from utils.auth import token_required
 
 trip_bp = Blueprint("trip", __name__, url_prefix="/api/trips")
 
-
-def decode_token(token: str):
-    try:
-        data = jwt.decode(
-            token,
-            current_app.config["SECRET_KEY"],
-            algorithms=["HS256"],
-        )
-        return data
-    except jwt.ExpiredSignatureError:
-        return None
-    except jwt.InvalidTokenError:
-        return None
-
-
 @trip_bp.route("", methods=["POST"])
+@token_required
 def create_trip_endpoint():
-    auth_header = request.headers.get("Authorization", "")
-    if not auth_header.startswith("Bearer "):
-        return jsonify({"message": "Thiếu hoặc sai Authorization header"}), 401
-
-    token = auth_header.split(" ", 1)[1]
-    decoded = decode_token(token)
-    if not decoded:
-        return jsonify({"message": "Token không hợp lệ hoặc đã hết hạn"}), 401
-
-    user_id = decoded.get("user_id")
-    if not user_id:
-        return jsonify({"message": "Token không chứa user_id"}), 401
+    user_id = request.user_id  # đã được gắn bởi token_required
 
     data = request.get_json() or {}
 
