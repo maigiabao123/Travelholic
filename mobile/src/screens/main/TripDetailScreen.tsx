@@ -16,7 +16,6 @@ const TripDetailScreen: React.FC = () => {
   const { id } = useLocalSearchParams<{ id: string }>(); // id = tripId
   const tripId = id ?? '';
 
-  // điều hướng
   const goHome = () => router.push('/');
   const goItinerary = () =>
     router.push({ pathname: '/itinerary/[tripId]', params: { tripId } });
@@ -47,9 +46,6 @@ const TripDetailScreen: React.FC = () => {
 
             <View style={styles.topBarRight}>
               <TouchableOpacity style={styles.circleBtn}>
-                <Text style={styles.circleBtnIcon}>⤴︎</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.circleBtn}>
                 <Text style={styles.circleBtnIcon}>♥</Text>
               </TouchableOpacity>
             </View>
@@ -59,9 +55,6 @@ const TripDetailScreen: React.FC = () => {
           <View style={styles.heroBottomRow}>
             <View style={styles.tag}>
               <Text style={styles.tagText}>Upcoming</Text>
-            </View>
-            <View style={styles.pageIndicator}>
-              <Text style={styles.pageIndicatorText}>1/8</Text>
             </View>
           </View>
         </View>
@@ -297,7 +290,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   circleBtnIcon: {
-    fontSize: 18,
+    fontSize: 20,
   },
   topBarRight: {
     flexDirection: 'row',
@@ -317,11 +310,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 999,
     backgroundColor: '#e0f2fe',
+    marginBottom: 20
   },
   tagText: {
     color: '#0369a1',
     fontWeight: '600',
     fontSize: 12,
+
   },
   pageIndicator: {
     paddingHorizontal: 10,

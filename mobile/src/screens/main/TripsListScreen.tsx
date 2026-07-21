@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
 import { Home, Briefcase, Plus, Map, User } from 'lucide-react-native';
 import TripCard from '../../components/trip/TripCard';
+import { router } from 'expo-router';
 
 // Dữ liệu mẫu
 const trips = [
@@ -82,7 +83,7 @@ export default function TripsListScreen() {
 
       {/* Bottom Bar */}
       <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.tabItem}>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/')}>
           <Home size={24} color="#64748b" />
           <Text style={styles.tabText}>Home</Text>
         </TouchableOpacity>
@@ -92,17 +93,17 @@ export default function TripsListScreen() {
           <Text style={[styles.tabText, styles.activeTabText]}>Trips</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/booking/create')}>
           <Plus size={32} color="white" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
-          <Map size={24} color="#64748b" />
-          <Text style={styles.tabText}>Itinerary</Text>
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/map')}>
+          <Map size={24} color="#9CA3AF" />
+          <Text style={styles.tabText}>Map</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.tabItem}>
-          <User size={24} color="#64748b" />
+        <TouchableOpacity style={styles.tabItem} onPress={() => router.push('/profile')}>
+          <User size={24} color="#9CA3AF" />
           <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
       </View>

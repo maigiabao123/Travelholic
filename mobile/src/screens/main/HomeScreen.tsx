@@ -114,7 +114,7 @@ export default function HomeScreen() {
           <Text style={styles.tabText}>Trips</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity style={styles.addButton} onPress={() => router.push('/booking/create')}>
           <Plus size={32} color="white" />
         </TouchableOpacity>
 
