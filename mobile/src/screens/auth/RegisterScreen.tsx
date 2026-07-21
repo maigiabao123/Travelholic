@@ -11,21 +11,19 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-
 import AppInput from '@/components/ui/AppInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
 
 export default function RegisterScreen() {
-  const [fullName, setFullName] = useState('');
+  const [fullName, setFullName] = useState('');   // dùng làm name
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
-
   const router = useRouter();
 
-  const handleSignup = () => {
+  const handleSignup = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
       Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
       return;
@@ -38,7 +36,36 @@ export default function RegisterScreen() {
       Alert.alert('Lỗi', 'Bạn phải đồng ý với Điều khoản và Chính sách');
       return;
     }
-    Alert.alert('Thành công', 'Đăng ký tài khoản thành công!');
+
+    const payload = {
+      email,          // backend: data.get("email")
+      name: fullName, // backend: data.get("name")
+      password,       // backend: data.get("password")
+    };
+
+    try {
+      const res = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.message || 'Đăng ký thất bại';
+        throw new Error(msg);
+      }
+
+      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
+        {
+          text: 'OK',
+          onPress: () => router.replace('/login'),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', (error as Error).message);
+    }
   };
 
   return (
@@ -72,7 +99,6 @@ export default function RegisterScreen() {
             value={fullName}
             onChangeText={setFullName}
           />
-
           <AppInput
             label="Email"
             iconName="mail"
@@ -81,7 +107,6 @@ export default function RegisterScreen() {
             onChangeText={setEmail}
             keyboardType="email-address"
           />
-
           <PasswordInput
             label="Password"
             placeholder="Create a password"
@@ -89,7 +114,6 @@ export default function RegisterScreen() {
             onChangeText={setPassword}
             hint="Must be at least 8 characters"
           />
-
           <PasswordInput
             label="Confirm Password"
             placeholder="Confirm your password"
@@ -175,9 +199,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: 'bold' },
   subtitle: { fontSize: 16, color: '#6b7280', marginTop: 4 },
   illustration: { fontSize: 70 },
-
   form: { marginTop: 30 },
-
   termsContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -196,7 +218,6 @@ const styles = StyleSheet.create({
   checkboxChecked: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
   termsText: { fontSize: 14, color: '#4b5563', flex: 1 },
   linkText: { color: '#2563eb' },
-
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -204,7 +225,6 @@ const styles = StyleSheet.create({
   },
   line: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
   orText: { paddingHorizontal: 16, color: '#9ca3af' },
-
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -220,7 +240,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   socialIcon: { width: 28, height: 28 },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

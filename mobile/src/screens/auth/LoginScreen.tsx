@@ -14,15 +14,46 @@ import { Ionicons } from '@expo/vector-icons';
 import AppInput from '@/components/ui/AppInput';
 import PasswordInput from '@/components/ui/PasswordInput';
 import PrimaryButton from '@/components/ui/PrimaryButton';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
+  // Đăng nhập bằng name (cột name trong bảng users)
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
-
   const router = useRouter();
 
-  const handleLogin = () => {
-    Alert.alert('Thành công', 'Đăng nhập thành công!');
+  const handleLogin = async () => {
+    const payload = {
+      name,       // backend: data.get("name")
+      password,   // backend: data.get("password")
+    };
+
+    try {
+      const res = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.message || 'Đăng nhập thất bại';
+        throw new Error(msg);
+      }
+
+      const token = data.token;
+      const user = data.user;
+
+      // Lưu JWT token để dùng cho các API khác (ví dụ tạo trip)
+      await AsyncStorage.setItem('authToken', token);
+
+      Alert.alert('Thành công', `Xin chào ${user.name}`);
+      // Điều hướng sau login nếu muốn:
+      // router.replace('/'); 
+    } catch (error) {
+      Alert.alert('Lỗi', (error as Error).message);
+    }
   };
 
   return (
@@ -38,7 +69,6 @@ export default function LoginScreen() {
         >
           <Ionicons name="arrow-back" size={28} color="#1f2937" />
         </TouchableOpacity>
-
         <View style={styles.logoContainer}>
           <Text style={styles.logo}>✈️</Text>
           <Text style={styles.brand}>TravelHolic</Text>
@@ -53,12 +83,11 @@ export default function LoginScreen() {
         </Text>
 
         <AppInput
-          label="Email"
-          iconName="mail"
-          placeholder="Enter your email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
+          label="Name"
+          iconName="person"
+          placeholder="Enter your name"
+          value={name}
+          onChangeText={setName}
         />
 
         <PasswordInput
@@ -79,7 +108,7 @@ export default function LoginScreen() {
         />
 
         {/* Divider */}
-        <View style={styles.divider}>
+        <View className="divider">
           <View style={styles.line} />
           <Text style={styles.orText}>or continue with</Text>
           <View style={styles.line} />
@@ -132,7 +161,6 @@ const styles = StyleSheet.create({
   logoContainer: { alignItems: 'center' },
   logo: { fontSize: 70, marginBottom: 8 },
   brand: { fontSize: 36, fontWeight: 'bold', color: '#1f2937' },
-
   formContainer: {
     backgroundColor: 'white',
     marginTop: -60,
@@ -143,10 +171,8 @@ const styles = StyleSheet.create({
   },
   title: { fontSize: 32, fontWeight: 'bold', color: '#1f2937' },
   subtitle: { fontSize: 16, color: '#6b7280', marginTop: 4 },
-
   forgotButton: { alignSelf: 'flex-end', marginTop: -8, marginBottom: 12 },
   forgotText: { color: '#2563eb', fontWeight: '500' },
-
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -154,7 +180,6 @@ const styles = StyleSheet.create({
   },
   line: { flex: 1, height: 1, backgroundColor: '#e5e7eb' },
   orText: { paddingHorizontal: 16, color: '#9ca3af' },
-
   socialContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -170,7 +195,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 6,
   },
   socialIcon: { width: 28, height: 28 },
-
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

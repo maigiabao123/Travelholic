@@ -7,16 +7,18 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type TravelType = 'Solo' | 'Couple' | 'Family' | 'Friends' | 'Business';
 const currencyOptions = ['VND', 'USD', 'AUD', 'EUR', 'GBP', 'JPY', 'CNY'];
+
 export default function CreateTripScreen() {
   const router = useRouter();
-
   const [tripName, setTripName] = useState('');
   const [destination, setDestination] = useState('');
   const [country, setCountry] = useState('');
@@ -30,20 +32,61 @@ export default function CreateTripScreen() {
   const [transportation, setTransportation] = useState('');
   const [hotel, setHotel] = useState('');
 
-  const handleCreateTrip = () => {
-    console.log({
-      tripName,
-      destination,
-      country,
-      startDate,
-      endDate,
-      budget,
-      currency,
-      description,
-      travelType,
-      transportation,
-      hotel,
-    });
+  const handleCreateTrip = async () => {
+    // validate đơn giản
+    if (!tripName || !destination || !country || !startDate || !endDate || !budget) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin bắt buộc');
+      return;
+    }
+
+    try {
+      const token = await AsyncStorage.getItem('authToken');
+      if (!token) {
+        Alert.alert('Lỗi', 'Bạn chưa đăng nhập');
+        return;
+      }
+
+      // Payload khớp với insert_trip trong db.py
+      const payload = {
+        name: tripName,
+        destination,
+        country,
+        start_date: startDate,
+        end_date: endDate,
+        budget: Number(budget),
+        currency_code: currency,
+        description,
+        travel_type: travelType,
+        transportation_type: transportation,
+        hotel_name: hotel,
+        cover_image_url: null, // chưa upload ảnh, để null
+      };
+
+      const res = await fetch('http://localhost:5000/api/trips', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.message || 'Tạo trip thất bại';
+        throw new Error(msg);
+      }
+
+      Alert.alert('Thành công', 'Tạo trip thành công!', [
+        {
+          text: 'OK',
+          onPress: () => router.back(), // hoặc điều hướng tới màn danh sách trip
+        },
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', (error as Error).message);
+    }
   };
 
   return (
@@ -110,7 +153,7 @@ export default function CreateTripScreen() {
             <FormLabel required>Start Date</FormLabel>
             <TextInput
               style={styles.input}
-              placeholder="Select start date"
+              placeholder="YYYY-MM-DD"
               value={startDate}
               onChangeText={setStartDate}
             />
@@ -120,7 +163,7 @@ export default function CreateTripScreen() {
             <FormLabel required>End Date</FormLabel>
             <TextInput
               style={styles.input}
-              placeholder="Select end date"
+              placeholder="YYYY-MM-DD"
               value={endDate}
               onChangeText={setEndDate}
             />
@@ -133,7 +176,7 @@ export default function CreateTripScreen() {
             <FormLabel required>Budget</FormLabel>
             <TextInput
               style={styles.input}
-              placeholder="e.g. 8,000,000"
+              placeholder="e.g. 8000000"
               keyboardType="numeric"
               value={budget}
               onChangeText={setBudget}
@@ -142,7 +185,6 @@ export default function CreateTripScreen() {
           <View style={styles.gap} />
           <View style={styles.currencyContainer}>
             <FormLabel>Currency</FormLabel>
-
             <View>
               <TouchableOpacity
                 style={styles.currencyBox}
@@ -156,7 +198,6 @@ export default function CreateTripScreen() {
                   color="#6b7280"
                 />
               </TouchableOpacity>
-
               {currencyOpen && (
                 <View style={styles.currencyDropdown}>
                   {currencyOptions.map(code => (
@@ -239,7 +280,6 @@ export default function CreateTripScreen() {
           onChangeText={setHotel}
         />
 
-        {/* Button spacing */}
         <View style={{ height: 24 }} />
       </ScrollView>
 
@@ -356,7 +396,7 @@ const styles = StyleSheet.create({
   gap: {
     width: 12,
   },
- currencyContainer: {
+  currencyContainer: {
     width: 110,
   },
   currencyBox: {
@@ -394,7 +434,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1d4ed8',
   },
-
   travelTypeRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
