@@ -50,7 +50,7 @@ export default function LoginScreen() {
 
       // Lưu token bằng SecureStore (Expo)
       await SecureStore.setItemAsync('authToken', token);
-
+      await SecureStore.setItemAsync('userName', user.name);
       Alert.alert('Thành công', `Xin chào ${user.name}`, [
         {
           text: 'OK',

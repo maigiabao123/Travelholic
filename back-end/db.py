@@ -146,3 +146,23 @@ def insert_trip(user_id, name, destination, country, start_date, end_date,
     conn.close()
 
     return trip_id
+
+def get_upcoming_trip_by_user_id(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("""
+        SELECT *
+        FROM trips
+        WHERE user_id = %s
+          AND start_date >= CURDATE()
+        ORDER BY start_date ASC
+        LIMIT 1
+    """, (user_id,))
+
+    trip = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    return trip
