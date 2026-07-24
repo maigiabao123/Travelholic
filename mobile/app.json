@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
     "userInterfaceStyle": "automatic",
+
     "ios": {
       "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.giabao228.mobile",
@@ -15,6 +16,7 @@
         "NSLocationWhenInUseUsageDescription": "Ứng dụng cần vị trí của bạn để hiển thị các địa điểm gần đó."
       }
     },
+
     "android": {
       "package": "com.giabao228.mobile",
       "adaptiveIcon": {
@@ -29,10 +31,12 @@
       ],
       "predictiveBackGestureEnabled": false
     },
+
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       "expo-router",
       [
@@ -52,19 +56,21 @@
       "expo-secure-store",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser",
-      "@rnmapbox/maps"
+      "expo-web-browser"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "router": {},
       "eas": {
         "projectId": "629cf7fd-bc52-444e-8830-41b9198617dd"
       }
     },
+
     "owner": "giabao228"
   }
 }
