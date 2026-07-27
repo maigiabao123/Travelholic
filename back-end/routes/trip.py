@@ -66,36 +66,40 @@ def calculate_status(start_date, end_date):
 
 
 def serialize_trip(trip):
-    """
-    Chuyển dữ liệu MySQL sang đúng format mà TripCard cần.
-    """
-
-    destination = trip.get("destination") or ""
-    country = trip.get("country") or ""
-
-    location = destination
-    if country:
-        location = f"{destination}, {country}"
-
     budget = trip.get("budget") or 0
 
     if isinstance(budget, Decimal):
         budget = float(budget)
 
+    start_date = trip.get("start_date")
+    end_date = trip.get("end_date")
+
     return {
         "id": trip.get("id"),
-        "image": trip.get("cover_image_url"),
-        "title": trip.get("name"),
-        "location": location,
-        "dateRange": (
-            f"{format_date(trip.get('start_date'))} – "
-            f"{format_date(trip.get('end_date'))}"
+        "name": trip.get("name"),
+        "destination": trip.get("destination"),
+        "country": trip.get("country"),
+
+        "start_date": (
+            start_date.isoformat()
+            if isinstance(start_date, (date, datetime))
+            else start_date
         ),
-        "price": budget,
-        "status": calculate_status(
-            trip.get("start_date"),
-            trip.get("end_date")
+        "end_date": (
+            end_date.isoformat()
+            if isinstance(end_date, (date, datetime))
+            else end_date
         ),
+
+        "budget": budget,
+        "currency_code": trip.get("currency_code"),
+        "description": trip.get("description"),
+        "travel_type": trip.get("travel_type"),
+        "transportation_type": trip.get("transportation_type"),
+        "hotel_name": trip.get("hotel_name"),
+        "cover_image_url": trip.get("cover_image_url"),
+
+        "status": calculate_status(start_date, end_date),
     }
 
 

@@ -36,45 +36,100 @@ type TripStatus =
 
 interface Trip {
   id: string | number;
-  image: string;
-  title: string;
-  location: string;
-  dateRange: string;
-  price: number;
-  status: TripStatus;
+
+  // Fields used by TripCard
+  image?: string | null;
+  title?: string | null;
+  location?: string | null;
+  dateRange?: string | null;
+  price?: number | string | null;
+
+  // Original database fields
+  name?: string | null;
+  destination?: string | null;
+  country?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  budget?: number | string | null;
+  currency_code?: string | null;
+  cover_image_url?: string | null;
+
+  description?: string | null;
+  travel_type?: string | null;
+  transportation_type?: string | null;
+  hotel_name?: string | null;
+
+  status?: TripStatus | null;
 }
+
+const DEFAULT_TRIP_IMAGE = 'https://picsum.photos/400/300';
 
 const API_BASE_URL =
   Platform.OS === 'web'
     ? 'http://localhost:5000'
-    : 'http://10.0.2.2:5000';
+    : 'http://192.168.1.62:5000';
 
-// Nếu dùng điện thoại thật, thay bằng IP máy chạy Flask:
-// const API_BASE_URL = 'http://192.168.1.10:5000';
+/**
+ * Converts the API response into the format expected by TripCard.
+ *
+ * Supports both:
+ * - title, location, dateRange, price
+ * - name, destination, start_date, budget
+ */
+function normalizeTrip(data: any): Trip {
+  const destination = data?.destination ?? '';
+  const country = data?.country ?? '';
+
+  const location =
+    data?.location ||
+    [destination, country].filter(Boolean).join(', ') ||
+    'Unknown location';
+
+  const dateRange =
+    data?.dateRange ||
+    [data?.start_date, data?.end_date]
+      .filter(Boolean)
+      .join(' – ') ||
+    'No date available';
+
+  return {
+    id: data?.id,
+
+    image: data?.image ?? data?.cover_image_url ?? null,
+
+    title: data?.title ?? data?.name ?? 'Untitled trip',
+
+    location,
+
+    dateRange,
+
+    price: data?.price ?? data?.budget ?? 0,
+
+    name: data?.name,
+    destination: data?.destination,
+    country: data?.country,
+    start_date: data?.start_date,
+    end_date: data?.end_date,
+    budget: data?.budget,
+    currency_code: data?.currency_code,
+    cover_image_url: data?.cover_image_url,
+
+    description: data?.description,
+    travel_type: data?.travel_type,
+    transportation_type: data?.transportation_type,
+    hotel_name: data?.hotel_name,
+
+    status: data?.status ?? 'Upcoming',
+  };
+}
 
 export default function HomeScreen() {
   const [userName, setUserName] = useState('');
-
-  useFocusEffect(
-    useCallback(() => {
-      const loadUserName = async () => {
-        const name = await SecureStore.getItemAsync('userName');
-
-        console.log('Tên lấy từ SecureStore:', name);
-
-        if (name) {
-          setUserName(name);
-        }
-      };
-
-      loadUserName();
-    }, [])
-  );
   const [upcomingTrip, setUpcomingTrip] = useState<Trip | null>(null);
   const [loadingTrip, setLoadingTrip] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchHomeData = async () => {
+  const fetchHomeData = useCallback(async () => {
     try {
       setLoadingTrip(true);
       setError('');
@@ -100,12 +155,13 @@ export default function HomeScreen() {
             Accept: 'application/json',
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (response.status === 401) {
         await SecureStore.deleteItemAsync('authToken');
         await SecureStore.deleteItemAsync('userName');
+
         router.replace('/login');
         return;
       }
@@ -114,26 +170,39 @@ export default function HomeScreen() {
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Không thể tải chuyến đi sắp tới.'
+          data?.message || 'Unable to load the upcoming trip.',
         );
       }
 
-      setUpcomingTrip(data.trip || null);
+      if (data?.trip) {
+        setUpcomingTrip(normalizeTrip(data.trip));
+      } else {
+        setUpcomingTrip(null);
+      }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Không thể kết nối đến server.'
+          : 'Unable to connect to the server.',
       );
     } finally {
       setLoadingTrip(false);
     }
-  };
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
+      const loadUserName = async () => {
+        const name = await SecureStore.getItemAsync('userName');
+
+        if (name) {
+          setUserName(name);
+        }
+      };
+
+      loadUserName();
       fetchHomeData();
-    }, [])
+    }, [fetchHomeData]),
   );
 
   const handleQuickActionPress = (route: string) => {
@@ -179,7 +248,7 @@ export default function HomeScreen() {
         avatarUri="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress"
         showNotificationDot
         onAvatarPress={() => router.push('/profile')}
-        onMenuPress={() => { }}
+        onMenuPress={() => {}}
       />
 
       <ScrollView
@@ -197,7 +266,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Thống kê hiện vẫn dùng dữ liệu cố định */}
+        {/* Statistics */}
         <StatisticCard
           trips={12}
           totalSpent="18.6M"
@@ -226,23 +295,27 @@ export default function HomeScreen() {
         ) : upcomingTrip ? (
           <TripCard
             id={upcomingTrip.id}
-            image={upcomingTrip.image}
-            title={upcomingTrip.title}
-            location={upcomingTrip.location}
-            dateRange={upcomingTrip.dateRange}
-            price={upcomingTrip.price}
-            status={upcomingTrip.status}
+            image={upcomingTrip.image || DEFAULT_TRIP_IMAGE}
+            title={upcomingTrip.title || 'Untitled trip'}
+            location={upcomingTrip.location || 'Unknown location'}
+            dateRange={
+              upcomingTrip.dateRange || 'No date available'
+            }
+            price={upcomingTrip.price ?? 0}
+            status={upcomingTrip.status || 'Upcoming'}
           />
         ) : (
           <Text style={styles.emptyText}>
-            Bạn chưa có chuyến đi sắp tới.
+            You do not have any upcoming trips.
           </Text>
         )}
 
         {/* Weather */}
         {upcomingTrip && (
           <WeatherCard
-            title={`Weather in ${upcomingTrip.location}`}
+            title={`Weather in ${
+              upcomingTrip.location || 'your destination'
+            }`}
             subtitle="Today"
             temp="29°C"
             description="Sunny"
@@ -269,13 +342,13 @@ export default function HomeScreen() {
         <View style={styles.tipCard}>
           <View style={styles.tipIcon} />
 
-          <View style={{ flex: 1 }}>
+          <View style={styles.tipContent}>
             <Text style={styles.tipTitle}>
               Plan better trips
             </Text>
 
             <Text style={styles.tipDesc}>
-              Organize everything in one place and enjoy your adventure!
+              Organise everything in one place and enjoy your adventure!
             </Text>
           </View>
         </View>
@@ -288,6 +361,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/')}
         >
           <Home size={24} color="#2563EB" />
+
           <Text style={[styles.tabText, styles.activeTabText]}>
             Home
           </Text>
@@ -298,6 +372,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/trips')}
         >
           <Briefcase size={24} color="#9CA3AF" />
+
           <Text style={styles.tabText}>Trips</Text>
         </TouchableOpacity>
 
@@ -313,6 +388,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/map')}
         >
           <Map size={24} color="#9CA3AF" />
+
           <Text style={styles.tabText}>Map</Text>
         </TouchableOpacity>
 
@@ -321,6 +397,7 @@ export default function HomeScreen() {
           onPress={() => router.push('/profile')}
         >
           <User size={24} color="#9CA3AF" />
+
           <Text style={styles.tabText}>Profile</Text>
         </TouchableOpacity>
       </View>
@@ -396,6 +473,10 @@ const styles = StyleSheet.create({
     marginRight: 12,
     borderRadius: 16,
     backgroundColor: '#FFF4E4',
+  },
+
+  tipContent: {
+    flex: 1,
   },
 
   tipTitle: {
