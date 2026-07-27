@@ -1,6 +1,6 @@
 // app/profile.tsx
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,35 +8,135 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Home, Briefcase, Plus, Map, User } from 'lucide-react-native';
+import {
+  Home,
+  Briefcase,
+  Plus,
+  Map,
+  User,
+} from 'lucide-react-native';
 import { router, usePathname } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 
-const hardcodedProfile = {
-  name: 'Olivia Nguyen',
-  email: 'olivia.nguyen@gmail.com',
-  location: 'Hanoi, Vietnam',
-  avatarUrl:
-    'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress',
-  tripsTotal: 12,
-  countriesVisited: 5,
-  totalSpent: 4250,
-  wishlistedPlaces: 18,
+import { apiRequest } from '@/services/api';
+
+type Profile = {
+  user_id: number;
+  name: string;
+  email: string;
+  location: string;
+  avatarUrl: string | null;
+  tripsTotal: number;
+  countriesVisited: number;
+  totalSpent: number;
+  wishlistedPlaces: number;
+};
+
+const formatAmount = (
+  value: number | string | null | undefined,
+) => {
+  const amount = Number(value) || 0;
+
+  if (amount >= 1_000_000_000) {
+    return `$${(amount / 1_000_000_000).toFixed(1)}B`;
+  }
+
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1)}M`;
+  }
+
+  if (amount >= 1_000) {
+    return `$${(amount / 1_000).toFixed(1)}K`;
+  }
+
+  return `$${amount.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  })}`;
 };
 
 export default function ProfileScreen() {
   const pathname = usePathname();
 
-  const profile = hardcodedProfile;
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const isActive = (path: string) => pathname === path;
 
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const data = await apiRequest<Profile>('/api/profile');
+        setProfile(data);
+      } catch (err) {
+        const message =
+          err instanceof Error
+            ? err.message
+            : 'Không thể tải thông tin Profile';
+
+        setError(message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
+
   const handleLogout = async () => {
     await SecureStore.deleteItemAsync('authToken');
+    await SecureStore.deleteItemAsync('userName');
     router.replace('/login');
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator
+            size="large"
+            color="#1060FF"
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.centerContainer}>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => router.replace('/profile')}
+          >
+            <Text style={styles.retryText}>
+              Thử lại
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <View style={styles.centerContainer}>
+          <Text>
+            Không tìm thấy thông tin người dùng.
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -44,30 +144,46 @@ export default function ProfileScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.topBar}>
-            <Text style={styles.screenTitle}>Profile</Text>
+            <Text style={styles.screenTitle}>
+              Profile
+            </Text>
           </View>
 
           {/* Avatar + info */}
           <View style={styles.profileRow}>
             <View>
               <Image
-                source={{ uri: profile.avatarUrl }}
+                source={{
+                  uri: profile.avatarUrl || '',
+                }}
                 style={styles.avatar}
               />
 
-              <TouchableOpacity style={styles.cameraButton}>
-                <Text style={{ fontSize: 12 }}>📷</Text>
+              <TouchableOpacity
+                style={styles.cameraButton}
+              >
+                <Text style={styles.cameraText}>
+                  📷
+                </Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.profileInfo}>
-              <Text style={styles.name}>{profile.name}</Text>
-              <Text style={styles.email}>{profile.email}</Text>
+              <Text style={styles.name}>
+                {profile.name}
+              </Text>
+
+              <Text style={styles.email}>
+                {profile.email}
+              </Text>
 
               <View style={styles.locationRow}>
-                <Text style={styles.locationIcon}>📍</Text>
+                <Text style={styles.locationIcon}>
+                  📍
+                </Text>
+
                 <Text style={styles.locationText}>
-                  {profile.location}
+                  {profile.location || 'Chưa cập nhật'}
                 </Text>
               </View>
             </View>
@@ -125,7 +241,7 @@ export default function ProfileScreen() {
             </View>
 
             <Text style={styles.statValue}>
-              ${profile.totalSpent.toLocaleString()}
+              {formatAmount(profile.totalSpent)}
             </Text>
 
             <Text style={styles.statLabel}>
@@ -157,34 +273,34 @@ export default function ProfileScreen() {
         <View style={styles.menuCard}>
           {renderMenuItem(
             'My Profile',
-            'View and edit your personal information'
+            'View and edit your personal information',
           )}
 
           {renderMenuItem(
             'Wishlist',
-            'Places you want to visit'
+            'Places you want to visit',
           )}
 
           {renderMenuItem(
             'Travel Statistics',
-            'View your travel insights and stats'
+            'View your travel insights and stats',
           )}
 
           {renderMenuItem(
             'Settings',
-            'App preferences and configurations'
+            'App preferences and configurations',
           )}
 
           {renderMenuItem(
             'About TravelHolic',
-            'App information and terms'
+            'App information and terms',
           )}
 
           {renderMenuItem(
             'Log Out',
             'Sign out from your account',
             true,
-            handleLogout
+            handleLogout,
           )}
         </View>
 
@@ -196,13 +312,18 @@ export default function ProfileScreen() {
           >
             <Home
               size={24}
-              color={isActive('/') ? '#1060FF' : '#9CA3AF'}
+              color={
+                isActive('/')
+                  ? '#1060FF'
+                  : '#9CA3AF'
+              }
             />
 
             <Text
               style={[
                 styles.tabLabel,
-                isActive('/') && styles.activeTabLabel,
+                isActive('/') &&
+                  styles.activeTabLabel,
               ]}
             >
               Home
@@ -215,13 +336,18 @@ export default function ProfileScreen() {
           >
             <Briefcase
               size={24}
-              color={isActive('/trips') ? '#1060FF' : '#9CA3AF'}
+              color={
+                isActive('/trips')
+                  ? '#1060FF'
+                  : '#9CA3AF'
+              }
             />
 
             <Text
               style={[
                 styles.tabLabel,
-                isActive('/trips') && styles.activeTabLabel,
+                isActive('/trips') &&
+                  styles.activeTabLabel,
               ]}
             >
               Trips
@@ -241,13 +367,18 @@ export default function ProfileScreen() {
           >
             <Map
               size={24}
-              color={isActive('/map') ? '#1060FF' : '#9CA3AF'}
+              color={
+                isActive('/map')
+                  ? '#1060FF'
+                  : '#9CA3AF'
+              }
             />
 
             <Text
               style={[
                 styles.tabLabel,
-                isActive('/map') && styles.activeTabLabel,
+                isActive('/map') &&
+                  styles.activeTabLabel,
               ]}
             >
               Itinerary
@@ -260,13 +391,18 @@ export default function ProfileScreen() {
           >
             <User
               size={24}
-              color={isActive('/profile') ? '#1060FF' : '#9CA3AF'}
+              color={
+                isActive('/profile')
+                  ? '#1060FF'
+                  : '#9CA3AF'
+              }
             />
 
             <Text
               style={[
                 styles.tabLabel,
-                isActive('/profile') && styles.activeTabLabel,
+                isActive('/profile') &&
+                  styles.activeTabLabel,
               ]}
             >
               Profile
@@ -282,7 +418,7 @@ function renderMenuItem(
   title: string,
   subtitle: string,
   danger = false,
-  onPress?: () => void
+  onPress?: () => void,
 ) {
   return (
     <TouchableOpacity
@@ -309,7 +445,6 @@ function renderMenuItem(
     </TouchableOpacity>
   );
 }
-
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
@@ -318,6 +453,31 @@ const styles = StyleSheet.create({
 
   scroll: {
     paddingBottom: 32,
+  },
+
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+
+  errorText: {
+    color: '#DC2626',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+
+  retryButton: {
+    backgroundColor: '#1060FF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+
+  retryText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
   },
 
   header: {
@@ -351,6 +511,7 @@ const styles = StyleSheet.create({
     borderRadius: 45,
     borderWidth: 3,
     borderColor: '#FFFFFF',
+    backgroundColor: '#E5E7EB',
   },
 
   cameraButton: {
@@ -365,6 +526,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
+  },
+
+  cameraText: {
+    fontSize: 12,
   },
 
   profileInfo: {

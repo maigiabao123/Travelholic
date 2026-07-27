@@ -17,28 +17,30 @@ export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
-  // Phải dùng đúng key mà LoginScreen sử dụng
   const token = await SecureStore.getItemAsync('authToken');
-
-  console.log('API token:', token ? 'Đã tìm thấy' : 'Không tìm thấy');
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
     headers: {
+      Accept: 'application/json',
       'Content-Type': 'application/json',
+
       ...(token
         ? {
             Authorization: `Bearer ${token}`,
           }
         : {}),
+
       ...(options.headers || {}),
     },
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data.message || 'Không thể gọi API');
+    throw new Error(
+      data?.message || 'Không thể gọi API',
+    );
   }
 
   return data as T;

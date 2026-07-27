@@ -9,7 +9,6 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-
 import WeatherCard from '../../components/trip/WeatherCard';
 import { getTripById, Trip } from '../../services/tripService';
 
@@ -64,17 +63,17 @@ type DailyItem = {
 };
 
 function getWeatherDescription(code: number): string {
-  if (code === 0) return 'Trời quang';
-  if (code === 1 || code === 2) return 'Nắng nhẹ';
-  if (code === 3) return 'Nhiều mây';
-  if (code === 45 || code === 48) return 'Sương mù';
-  if (code >= 51 && code <= 57) return 'Mưa phùn';
-  if (code >= 61 && code <= 67) return 'Có mưa';
-  if (code >= 71 && code <= 77) return 'Có tuyết';
-  if (code >= 80 && code <= 82) return 'Mưa rào';
-  if (code >= 95 && code <= 99) return 'Có giông';
+  if (code === 0) return 'Clear sky';
+  if (code === 1 || code === 2) return 'Partly cloudy';
+  if (code === 3) return 'Cloudy';
+  if (code === 45 || code === 48) return 'Foggy';
+  if (code >= 51 && code <= 57) return 'Drizzle';
+  if (code >= 61 && code <= 67) return 'Rainy';
+  if (code >= 71 && code <= 77) return 'Snowy';
+  if (code >= 80 && code <= 82) return 'Rain showers';
+  if (code >= 95 && code <= 99) return 'Thunderstorm';
 
-  return 'Không xác định';
+  return 'Unknown';
 }
 
 function getWeatherIcon(code: number): string {
@@ -92,7 +91,7 @@ function getWeatherIcon(code: number): string {
 }
 
 function formatTime(value: string): string {
-  return new Date(value).toLocaleTimeString('vi-VN', {
+  return new Date(value).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
@@ -100,7 +99,7 @@ function formatTime(value: string): string {
 }
 
 function formatToday(): string {
-  return new Date().toLocaleDateString('vi-VN', {
+  return new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -108,7 +107,7 @@ function formatToday(): string {
 }
 
 function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('vi-VN', {
+  return new Date(value).toLocaleDateString('en-US', {
     day: 'numeric',
     month: 'long',
   });
@@ -116,10 +115,10 @@ function formatDate(value: string): string {
 
 function formatDay(value: string, index: number): string {
   if (index === 0) {
-    return 'Hôm nay';
+    return 'Today';
   }
 
-  return new Date(value).toLocaleDateString('vi-VN', {
+  return new Date(value).toLocaleDateString('en-US', {
     weekday: 'long',
   });
 }
@@ -150,15 +149,14 @@ const WeatherScreen: React.FC = () => {
         setError('');
 
         if (!tripId) {
-          throw new Error('Không tìm thấy ID của chuyến đi.');
+          throw new Error('Trip ID was not found.');
         }
 
-        // Lấy thông tin trip theo tripId
         const tripResponse = await getTripById(tripId);
 
         if (!tripResponse?.trip) {
           throw new Error(
-            'Không tìm thấy thông tin chuyến đi.',
+            'Trip information was not found.',
           );
         }
 
@@ -170,20 +168,15 @@ const WeatherScreen: React.FC = () => {
 
         const destination =
           currentTrip.destination?.trim() || '';
-        const country = currentTrip.country?.trim() || '';
+        const country =
+          currentTrip.country?.trim() || '';
 
         if (!destination) {
           throw new Error(
-            'Chuyến đi chưa có thông tin địa điểm.',
+            'The trip does not have a destination.',
           );
         }
 
-        /*
-         * Thử tìm theo destination trước.
-         * Ví dụ:
-         * 1. California
-         * 2. California, USA
-         */
         const locationQueries = [
           destination,
           [destination, country]
@@ -222,12 +215,6 @@ const WeatherScreen: React.FC = () => {
             continue;
           }
 
-          /*
-           * Nếu có country_code thì ưu tiên kết quả
-           * thuộc quốc gia tương ứng.
-           *
-           * USA được quy đổi thành US.
-           */
           const normalisedCountry =
             country.toLowerCase() === 'usa'
               ? 'us'
@@ -252,7 +239,7 @@ const WeatherScreen: React.FC = () => {
 
         if (!selectedLocation) {
           throw new Error(
-            `Không tìm thấy địa điểm: ${destination}, ${country}`,
+            `Location not found: ${destination}, ${country}`,
           );
         }
 
@@ -260,7 +247,6 @@ const WeatherScreen: React.FC = () => {
           setLocation(selectedLocation);
         }
 
-        // Fetch thời tiết theo latitude và longitude
         const weatherUrl =
           `https://api.open-meteo.com/v1/forecast` +
           `?latitude=${selectedLocation.latitude}` +
@@ -275,7 +261,7 @@ const WeatherScreen: React.FC = () => {
 
         if (!weatherResponse.ok) {
           throw new Error(
-            'Không thể tải dữ liệu thời tiết.',
+            'Unable to load weather data.',
           );
         }
 
@@ -290,7 +276,7 @@ const WeatherScreen: React.FC = () => {
           setError(
             err instanceof Error
               ? err.message
-              : 'Không thể tải thông tin thời tiết.',
+              : 'Unable to load weather information.',
           );
         }
       } finally {
@@ -316,7 +302,7 @@ const WeatherScreen: React.FC = () => {
         />
 
         <Text style={styles.loadingText}>
-          Đang tải thông tin thời tiết...
+          Loading weather information...
         </Text>
       </View>
     );
@@ -326,7 +312,7 @@ const WeatherScreen: React.FC = () => {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>
-          {error || 'Không thể tải dữ liệu thời tiết.'}
+          {error || 'Unable to load weather data.'}
         </Text>
       </View>
     );
@@ -343,7 +329,9 @@ const WeatherScreen: React.FC = () => {
       .slice(0, 6)
       .map((time, index) => ({
         time:
-          index === 0 ? 'Hiện tại' : formatTime(time),
+          index === 0
+            ? 'Now'
+            : formatTime(time),
         temp: `${Math.round(
           weather.hourly.temperature_2m[index],
         )}°`,
@@ -430,16 +418,15 @@ const WeatherScreen: React.FC = () => {
             </Text>
 
             <Text style={styles.currentDescription}>
-              Thời tiết hiện tại tại địa điểm của
-              chuyến đi.
+              Current weather at your trip destination.
             </Text>
           </View>
         </ImageBackground>
 
         <View style={styles.cardWrapper}>
           <WeatherCard
-            title="Hiện tại"
-            subtitle={`Cảm giác như ${Math.round(
+            title="Current"
+            subtitle={`Feels like ${Math.round(
               currentWeather.apparent_temperature,
             )}°`}
             temp={`${Math.round(
@@ -456,7 +443,7 @@ const WeatherScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              Dự báo theo giờ
+              Hourly forecast
             </Text>
           </View>
 
@@ -507,11 +494,11 @@ const WeatherScreen: React.FC = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>
-              Dự báo 7 ngày
+              7-day forecast
             </Text>
 
             <Text style={styles.sectionLink}>
-              Xem thêm
+              View more
             </Text>
           </View>
 
@@ -563,7 +550,7 @@ const WeatherScreen: React.FC = () => {
               </Text>
 
               <Text style={styles.infoLabel}>
-                Bình minh
+                Sunrise
               </Text>
 
               <Text style={styles.infoValue}>
@@ -577,7 +564,7 @@ const WeatherScreen: React.FC = () => {
               </Text>
 
               <Text style={styles.infoLabel}>
-                Hoàng hôn
+                Sunset
               </Text>
 
               <Text style={styles.infoValue}>
@@ -609,12 +596,12 @@ const WeatherScreen: React.FC = () => {
           <View style={{ flex: 1 }}>
             <Text style={styles.noticeTitle}>
               {currentWeather.temperature_2m >= 30
-                ? 'Nên mặc quần áo thoáng mát.'
-                : 'Nên mang theo áo khoác nhẹ.'}
+                ? 'Wear light and breathable clothing.'
+                : 'Bring a light jacket.'}
             </Text>
 
             <Text style={styles.noticeSubtitle}>
-              Dữ liệu thời tiết theo trip: {trip.name}
+              Weather data for trip: {trip.name}
             </Text>
           </View>
         </View>
@@ -624,7 +611,6 @@ const WeatherScreen: React.FC = () => {
 };
 
 export default WeatherScreen;
-
 
 const styles = StyleSheet.create({
   container: {

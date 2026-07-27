@@ -1,29 +1,44 @@
 import React from 'react';
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 
 type Props = {
-  avatarUri: string;
+  avatarUri?: string | null;
   showNotificationDot?: boolean;
   onAvatarPress?: () => void;
   onMenuPress?: () => void;
 };
 
+const DEFAULT_AVATAR =
+  'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress';
+
 export default function AppHeader({
   avatarUri,
   showNotificationDot,
   onAvatarPress,
-  onMenuPress,
 }: Props) {
+  const imageUri =
+    avatarUri?.trim() || DEFAULT_AVATAR;
+
   return (
     <View style={styles.container}>
-      {/* Avatar clickable */}
-      <TouchableOpacity onPress={onAvatarPress}>
-        <Image source={{ uri: avatarUri }} style={styles.avatar} />
-        {showNotificationDot && <View style={styles.dot} />}
-      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onAvatarPress}
+        activeOpacity={0.8}
+      >
+        <Image
+          source={{ uri: imageUri }}
+          style={styles.avatar}
+        />
 
-      {/* Phần nút menu / setting bên phải nếu có */}
-      {/* <TouchableOpacity onPress={onMenuPress}> ... </TouchableOpacity> */}
+        {showNotificationDot && (
+          <View style={styles.dot} />
+        )}
+      </TouchableOpacity>
     </View>
   );
 }
@@ -36,11 +51,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+
   avatar: {
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: '#E5E7EB',
   },
+
   dot: {
     position: 'absolute',
     right: -2,

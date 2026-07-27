@@ -1,5 +1,3 @@
-// src/screens/main/HomeScreen.tsx
-
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -27,6 +25,7 @@ import QuickActionsRow from '@/components/ui/QuickActionsRow';
 import StatisticCard from '@/components/profile/StatisticCard';
 import TripCard from '@/components/trip/TripCard';
 import WeatherCard from '@/components/trip/WeatherCard';
+import { apiRequest } from '@/services/api';
 
 type TripStatus =
   | 'Upcoming'
@@ -34,17 +33,25 @@ type TripStatus =
   | 'Completed'
   | 'Cancelled';
 
+type Profile = {
+  user_id: number;
+  name: string;
+  email: string;
+  location: string;
+  avatarUrl: string | null;
+  tripsTotal: number;
+  countriesVisited: number;
+  totalSpent: number;
+  wishlistedPlaces: number;
+};
+
 interface Trip {
   id: string | number;
-
-  // Fields used by TripCard
   image?: string | null;
   title?: string | null;
   location?: string | null;
   dateRange?: string | null;
   price?: number | string | null;
-
-  // Original database fields
   name?: string | null;
   destination?: string | null;
   country?: string | null;
@@ -53,36 +60,55 @@ interface Trip {
   budget?: number | string | null;
   currency_code?: string | null;
   cover_image_url?: string | null;
-
   description?: string | null;
   travel_type?: string | null;
   transportation_type?: string | null;
   hotel_name?: string | null;
-
   status?: TripStatus | null;
 }
 
-const DEFAULT_TRIP_IMAGE = 'https://picsum.photos/400/300';
+const DEFAULT_TRIP_IMAGE =
+  'https://picsum.photos/400/300';
+
+const DEFAULT_AVATAR =
+  'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress';
 
 const API_BASE_URL =
   Platform.OS === 'web'
     ? 'http://localhost:5000'
     : 'http://192.168.1.62:5000';
 
-/**
- * Converts the API response into the format expected by TripCard.
- *
- * Supports both:
- * - title, location, dateRange, price
- * - name, destination, start_date, budget
- */
+function formatAmount(
+  value: number | string | null | undefined,
+): string {
+  const amount = Number(value) || 0;
+
+  if (amount >= 1_000_000_000) {
+    return `$${(amount / 1_000_000_000).toFixed(1)}B`;
+  }
+
+  if (amount >= 1_000_000) {
+    return `$${(amount / 1_000_000).toFixed(1)}M`;
+  }
+
+  if (amount >= 1_000) {
+    return `$${(amount / 1_000).toFixed(1)}K`;
+  }
+
+  return `$${amount.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 function normalizeTrip(data: any): Trip {
   const destination = data?.destination ?? '';
   const country = data?.country ?? '';
 
   const location =
     data?.location ||
-    [destination, country].filter(Boolean).join(', ') ||
+    [destination, country]
+      .filter(Boolean)
+      .join(', ') ||
     'Unknown location';
 
   const dateRange =
@@ -94,17 +120,20 @@ function normalizeTrip(data: any): Trip {
 
   return {
     id: data?.id,
-
-    image: data?.image ?? data?.cover_image_url ?? null,
-
-    title: data?.title ?? data?.name ?? 'Untitled trip',
-
+    image:
+      data?.image ??
+      data?.cover_image_url ??
+      null,
+    title:
+      data?.title ??
+      data?.name ??
+      'Untitled trip',
     location,
-
     dateRange,
-
-    price: data?.price ?? data?.budget ?? 0,
-
+    price:
+      data?.price ??
+      data?.budget ??
+      0,
     name: data?.name,
     destination: data?.destination,
     country: data?.country,
@@ -113,39 +142,42 @@ function normalizeTrip(data: any): Trip {
     budget: data?.budget,
     currency_code: data?.currency_code,
     cover_image_url: data?.cover_image_url,
-
     description: data?.description,
     travel_type: data?.travel_type,
-    transportation_type: data?.transportation_type,
+    transportation_type:
+      data?.transportation_type,
     hotel_name: data?.hotel_name,
-
     status: data?.status ?? 'Upcoming',
   };
 }
 
 export default function HomeScreen() {
-  const [userName, setUserName] = useState('');
-  const [upcomingTrip, setUpcomingTrip] = useState<Trip | null>(null);
-  const [loadingTrip, setLoadingTrip] = useState(true);
+  const [profile, setProfile] =
+    useState<Profile | null>(null);
+
+  const [upcomingTrip, setUpcomingTrip] =
+    useState<Trip | null>(null);
+
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const fetchHomeData = useCallback(async () => {
     try {
-      setLoadingTrip(true);
+      setLoading(true);
       setError('');
 
-      const token = await SecureStore.getItemAsync('authToken');
-      const storedUserName =
-        await SecureStore.getItemAsync('userName');
-
-      if (storedUserName) {
-        setUserName(storedUserName);
-      }
+      const token =
+        await SecureStore.getItemAsync('authToken');
 
       if (!token) {
         router.replace('/login');
         return;
       }
+
+      const profileData =
+        await apiRequest<Profile>('/api/profile');
+
+      setProfile(profileData);
 
       const response = await fetch(
         `${API_BASE_URL}/api/trips/upcoming`,
@@ -159,8 +191,13 @@ export default function HomeScreen() {
       );
 
       if (response.status === 401) {
-        await SecureStore.deleteItemAsync('authToken');
-        await SecureStore.deleteItemAsync('userName');
+        await SecureStore.deleteItemAsync(
+          'authToken',
+        );
+
+        await SecureStore.deleteItemAsync(
+          'userName',
+        );
 
         router.replace('/login');
         return;
@@ -170,12 +207,15 @@ export default function HomeScreen() {
 
       if (!response.ok) {
         throw new Error(
-          data?.message || 'Unable to load the upcoming trip.',
+          data?.message ||
+            'Unable to load the upcoming trip.',
         );
       }
 
       if (data?.trip) {
-        setUpcomingTrip(normalizeTrip(data.trip));
+        setUpcomingTrip(
+          normalizeTrip(data.trip),
+        );
       } else {
         setUpcomingTrip(null);
       }
@@ -186,26 +226,19 @@ export default function HomeScreen() {
           : 'Unable to connect to the server.',
       );
     } finally {
-      setLoadingTrip(false);
+      setLoading(false);
     }
   }, []);
 
   useFocusEffect(
     useCallback(() => {
-      const loadUserName = async () => {
-        const name = await SecureStore.getItemAsync('userName');
-
-        if (name) {
-          setUserName(name);
-        }
-      };
-
-      loadUserName();
       fetchHomeData();
     }, [fetchHomeData]),
   );
 
-  const handleQuickActionPress = (route: string) => {
+  const handleQuickActionPress = (
+    route: string,
+  ) => {
     router.push(route as any);
   };
 
@@ -245,9 +278,13 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <AppHeader
-        avatarUri="https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg?auto=compress"
+        avatarUri={
+          profile?.avatarUrl || DEFAULT_AVATAR
+        }
         showNotificationDot
-        onAvatarPress={() => router.push('/profile')}
+        onAvatarPress={() =>
+          router.push('/profile')
+        }
         onMenuPress={() => {}}
       />
 
@@ -255,10 +292,9 @@ export default function HomeScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Greeting */}
         <View style={styles.greeting}>
           <Text style={styles.helloText}>
-            Hello, {userName || 'Traveler'}! 👋
+            Hello, {profile?.name || 'Traveler'}! 👋
           </Text>
 
           <Text style={styles.subtitle}>
@@ -266,43 +302,70 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        {/* Statistics */}
-        <StatisticCard
-          trips={12}
-          totalSpent="18.6M"
-          countries={8}
-        />
+        {profile ? (
+          <StatisticCard
+            trips={profile.tripsTotal}
+            totalSpent={formatAmount(
+              profile.totalSpent,
+            )}
+            countries={
+              profile.countriesVisited
+            }
+          />
+        ) : (
+          <View style={styles.statsLoading}>
+            <ActivityIndicator
+              size="small"
+              color="#2563EB"
+            />
+          </View>
+        )}
 
-        {/* Upcoming Trip */}
         <SectionHeader
           title="Upcoming Trip"
           actionLabel="View all"
-          onPressAction={() => router.push('/trips')}
+          onPressAction={() =>
+            router.push('/trips')
+          }
           containerStyle={{
             marginTop: 22,
             marginBottom: 20,
           }}
         />
 
-        {loadingTrip ? (
+        {loading ? (
           <ActivityIndicator
             size="small"
             color="#2563EB"
             style={styles.loading}
           />
-        ) : error !== '' ? (
-          <Text style={styles.errorText}>{error}</Text>
+        ) : error ? (
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
         ) : upcomingTrip ? (
           <TripCard
             id={upcomingTrip.id}
-            image={upcomingTrip.image || DEFAULT_TRIP_IMAGE}
-            title={upcomingTrip.title || 'Untitled trip'}
-            location={upcomingTrip.location || 'Unknown location'}
+            image={
+              upcomingTrip.image ||
+              DEFAULT_TRIP_IMAGE
+            }
+            title={
+              upcomingTrip.title ||
+              'Untitled trip'
+            }
+            location={
+              upcomingTrip.location ||
+              'Unknown location'
+            }
             dateRange={
-              upcomingTrip.dateRange || 'No date available'
+              upcomingTrip.dateRange ||
+              'No date available'
             }
             price={upcomingTrip.price ?? 0}
-            status={upcomingTrip.status || 'Upcoming'}
+            status={
+              upcomingTrip.status || 'Upcoming'
+            }
           />
         ) : (
           <Text style={styles.emptyText}>
@@ -310,11 +373,11 @@ export default function HomeScreen() {
           </Text>
         )}
 
-        {/* Weather */}
         {upcomingTrip && (
           <WeatherCard
             title={`Weather in ${
-              upcomingTrip.location || 'your destination'
+              upcomingTrip.location ||
+              'your destination'
             }`}
             subtitle="Today"
             temp="29°C"
@@ -322,23 +385,27 @@ export default function HomeScreen() {
             humidity="72%"
             wind="12 km/h"
             onPress={() =>
-              router.push(`/weather/${upcomingTrip.id}`)
+              router.push(
+                `/weather/${upcomingTrip.id}`,
+              )
             }
           />
         )}
 
-        {/* Quick Actions */}
         <SectionHeader
           title="Quick Actions"
-          containerStyle={{ marginTop: 22 }}
+          containerStyle={{
+            marginTop: 22,
+          }}
         />
 
         <QuickActionsRow
           actions={quickActions}
-          onPressAction={handleQuickActionPress}
+          onPressAction={
+            handleQuickActionPress
+          }
         />
 
-        {/* Tip */}
         <View style={styles.tipCard}>
           <View style={styles.tipIcon} />
 
@@ -348,21 +415,29 @@ export default function HomeScreen() {
             </Text>
 
             <Text style={styles.tipDesc}>
-              Organise everything in one place and enjoy your adventure!
+              Organise everything in one place and
+              enjoy your adventure!
             </Text>
           </View>
         </View>
       </ScrollView>
 
-      {/* Bottom Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => router.push('/')}
         >
-          <Home size={24} color="#2563EB" />
+          <Home
+            size={24}
+            color="#2563EB"
+          />
 
-          <Text style={[styles.tabText, styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              styles.activeTabText,
+            ]}
+          >
             Home
           </Text>
         </TouchableOpacity>
@@ -371,34 +446,56 @@ export default function HomeScreen() {
           style={styles.tabItem}
           onPress={() => router.push('/trips')}
         >
-          <Briefcase size={24} color="#9CA3AF" />
+          <Briefcase
+            size={24}
+            color="#9CA3AF"
+          />
 
-          <Text style={styles.tabText}>Trips</Text>
+          <Text style={styles.tabText}>
+            Trips
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push('/booking/create')}
+          onPress={() =>
+            router.push('/booking/create')
+          }
         >
-          <Plus size={32} color="#FFFFFF" />
+          <Plus
+            size={32}
+            color="#FFFFFF"
+          />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => router.push('/map')}
         >
-          <Map size={24} color="#9CA3AF" />
+          <Map
+            size={24}
+            color="#9CA3AF"
+          />
 
-          <Text style={styles.tabText}>Map</Text>
+          <Text style={styles.tabText}>
+            Map
+          </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => router.push('/profile')}
+          onPress={() =>
+            router.push('/profile')
+          }
         >
-          <User size={24} color="#9CA3AF" />
+          <User
+            size={24}
+            color="#9CA3AF"
+          />
 
-          <Text style={styles.tabText}>Profile</Text>
+          <Text style={styles.tabText}>
+            Profile
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -432,6 +529,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 14,
     color: '#6B7280',
+  },
+
+  statsLoading: {
+    height: 110,
+    marginTop: 18,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   loading: {
