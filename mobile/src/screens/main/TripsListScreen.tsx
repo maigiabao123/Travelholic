@@ -1,6 +1,9 @@
+// src/app/trips/index.tsx
+
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -17,7 +20,6 @@ import {
   User,
 } from 'lucide-react-native';
 import { router, useFocusEffect } from 'expo-router';
-import { Platform } from 'react-native';
 import TripCard from '../../components/trip/TripCard';
 
 type TripStatus =
@@ -36,22 +38,81 @@ interface Trip {
   status: TripStatus;
 }
 
-const isWeb = Platform.OS === 'web';
-const API_URL = isWeb
-  ? 'http://localhost:5000'
-  : 'http://10.0.2.2:5000';
+const API_URL =
+  Platform.OS === 'web'
+    ? 'http://localhost:5000'
+    : 'http://192.168.1.62:5000';
+
+const DEFAULT_IMAGE = 'https://picsum.photos/400/300';
+
+function normalizeStatus(status: unknown): TripStatus {
+  if (
+    status === 'Upcoming' ||
+    status === 'Ongoing' ||
+    status === 'Completed' ||
+    status === 'Cancelled'
+  ) {
+    return status;
+  }
+
+  return 'Upcoming';
+}
+
+function normalizeTrip(data: any): Trip {
+  const destination = data?.destination ?? '';
+  const country = data?.country ?? '';
+
+  const location =
+    data?.location ||
+    [destination, country].filter(Boolean).join(', ') ||
+    'Unknown location';
+
+  const dateRange =
+    data?.dateRange ||
+    [
+      data?.start_date,
+      data?.end_date,
+    ]
+      .filter(Boolean)
+      .join(' – ') ||
+    'No date available';
+
+  const rawPrice = data?.price ?? data?.budget ?? 0;
+  const price = Number(rawPrice);
+
+  return {
+    id: data?.id,
+
+    image:
+      data?.image ||
+      data?.cover_image_url ||
+      DEFAULT_IMAGE,
+
+    title:
+      data?.title ||
+      data?.name ||
+      'Untitled trip',
+
+    location,
+
+    dateRange,
+
+    price: Number.isNaN(price) ? 0 : price,
+
+    status: normalizeStatus(data?.status),
+  };
+}
 
 export default function TripsListScreen() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchTrips = async () => {
+  const fetchTrips = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
 
-      // Phải trùng với key trong LoginScreen
       const token = await SecureStore.getItemAsync('authToken');
 
       if (!token) {
@@ -69,6 +130,8 @@ export default function TripsListScreen() {
 
       if (response.status === 401) {
         await SecureStore.deleteItemAsync('authToken');
+        await SecureStore.deleteItemAsync('userName');
+
         router.replace('/login');
         return;
       }
@@ -77,27 +140,30 @@ export default function TripsListScreen() {
 
       if (!response.ok) {
         throw new Error(
-          data.message || 'Không thể tải danh sách chuyến đi.'
+          data?.message || 'Unable to load your trips.',
         );
       }
 
-      setTrips(data.trips || []);
+      const normalizedTrips = Array.isArray(data?.trips)
+        ? data.trips.map(normalizeTrip)
+        : [];
+
+      setTrips(normalizedTrips);
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Không thể kết nối đến server.'
+          : 'Unable to connect to the server.',
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Tải lại dữ liệu mỗi khi mở màn hình
   useFocusEffect(
     useCallback(() => {
       fetchTrips();
-    }, [])
+    }, [fetchTrips]),
   );
 
   return (
@@ -108,22 +174,30 @@ export default function TripsListScreen() {
 
       {loading && (
         <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#2563EB" />
+          <ActivityIndicator
+            size="large"
+            color="#2563EB"
+          />
+
           <Text style={styles.loadingText}>
-            Đang tải chuyến đi...
+            Loading trips...
           </Text>
         </View>
       )}
 
       {!loading && error !== '' && (
         <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>
+            {error}
+          </Text>
 
           <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchTrips}
           >
-            <Text style={styles.retryText}>Thử lại</Text>
+            <Text style={styles.retryText}>
+              Try again
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -137,13 +211,13 @@ export default function TripsListScreen() {
           {trips.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
-                Bạn chưa có chuyến đi nào.
+                You do not have any trips yet.
               </Text>
             </View>
           ) : (
             trips.map((trip) => (
               <TripCard
-                key={trip.id}
+                key={trip.id.toString()}
                 id={trip.id}
                 image={trip.image}
                 title={trip.title}
@@ -168,7 +242,12 @@ export default function TripsListScreen() {
 
         <TouchableOpacity style={styles.tabItem}>
           <Briefcase size={24} color="#3b82f6" />
-          <Text style={[styles.tabText, styles.activeTabText]}>
+          <Text
+            style={[
+              styles.tabText,
+              styles.activeTabText,
+            ]}
+          >
             Trips
           </Text>
         </TouchableOpacity>
