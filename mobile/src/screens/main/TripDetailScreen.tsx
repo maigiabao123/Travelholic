@@ -83,9 +83,9 @@ const TripDetailScreen: React.FC = () => {
     });
   };
 
-  const goBooking = () => {
+  const goWeather = () => {
     router.push({
-      pathname: '/booking/create',
+      pathname: '/weather/[tripId]',
       params: { tripId },
     });
   };
@@ -375,9 +375,9 @@ const TripDetailScreen: React.FC = () => {
               />
 
               <QuickAction
-                icon="🧳"
-                label="Bookings"
-                onPress={goBooking}
+                icon="🌤️"
+                label="Weather"
+                onPress={goWeather}
               />
             </View>
           </SectionContainer>
