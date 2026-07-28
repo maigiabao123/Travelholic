@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify 
 
 from db import (
     insert_trip,

@@ -1,6 +1,8 @@
 import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  FlatList,
+  ImageBackground,
   Platform,
   ScrollView,
   StyleSheet,
@@ -21,7 +23,6 @@ import {
 
 import AppHeader from '@/components/common/AppHeader';
 import SectionHeader from '@/components/common/SectionHeader';
-import QuickActionsRow from '@/components/ui/QuickActionsRow';
 import StatisticCard from '@/components/profile/StatisticCard';
 import TripCard from '@/components/trip/TripCard';
 import WeatherCard from '@/components/trip/WeatherCard';
@@ -67,6 +68,14 @@ interface Trip {
   status?: TripStatus | null;
 }
 
+type PopularDestination = {
+  id: string;
+  continent: string;
+  country: string;
+  city: string;
+  image: string;
+};
+
 const DEFAULT_TRIP_IMAGE =
   'https://picsum.photos/400/300';
 
@@ -77,6 +86,105 @@ const API_BASE_URL =
   Platform.OS === 'web'
     ? 'http://localhost:5000'
     : 'http://192.168.1.62:5000';
+
+const popularDestinations: PopularDestination[] = [
+  {
+    id: '1',
+    continent: 'Châu Á',
+    country: 'Việt Nam',
+    city: 'Hạ Long',
+    image:
+      'https://images.unsplash.com/photo-1528127269322-539801943592?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '2',
+    continent: 'Châu Á',
+    country: 'Nhật Bản',
+    city: 'Kyoto',
+    image:
+      'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '3',
+    continent: 'Châu Âu',
+    country: 'Pháp',
+    city: 'Paris',
+    image:
+      'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '4',
+    continent: 'Châu Âu',
+    country: 'Ý',
+    city: 'Rome',
+    image:
+      'https://images.unsplash.com/photo-1529260830199-42c24126f198?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '5',
+    continent: 'Châu Phi',
+    country: 'Ai Cập',
+    city: 'Cairo',
+    image:
+      'https://images.unsplash.com/photo-1568322445389-f64ac2515020?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '6',
+    continent: 'Châu Phi',
+    country: 'Nam Phi',
+    city: 'Cape Town',
+    image:
+      'https://images.unsplash.com/photo-1580060839134-75a5edca2e99?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '7',
+    continent: 'Bắc Mỹ',
+    country: 'Hoa Kỳ',
+    city: 'New York',
+    image:
+      'https://images.unsplash.com/photo-1485871981521-5b1fd3805eee?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '8',
+    continent: 'Bắc Mỹ',
+    country: 'Canada',
+    city: 'Toronto',
+    image:
+      'https://images.unsplash.com/photo-1517935706615-2717063c2225?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '9',
+    continent: 'Nam Mỹ',
+    country: 'Brazil',
+    city: 'Rio de Janeiro',
+    image:
+      'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '10',
+    continent: 'Nam Mỹ',
+    country: 'Argentina',
+    city: 'Buenos Aires',
+    image:
+      'https://images.unsplash.com/photo-1589909202802-8f4aadce1849?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+  {
+    id: '11',
+    continent: 'Châu Đại Dương',
+    country: 'Úc',
+    city: 'Sydney',
+    image:
+      'https://images.pexels.com/photos/1878293/pexels-photo-1878293.jpeg',
+  },
+  {
+    id: '12',
+    continent: 'Châu Đại Dương',
+    country: 'New Zealand',
+    city: 'Queenstown',
+    image:
+      'https://images.unsplash.com/photo-1507699622108-4be3abd695ad?auto=format&fit=crop&w=800&h=1000&q=80',
+  },
+];
 
 function formatAmount(
   value: number | string | null | undefined,
@@ -151,6 +259,49 @@ function normalizeTrip(data: any): Trip {
   };
 }
 
+function PopularDestinationCard({
+  item,
+}: {
+  item: PopularDestination;
+}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.destinationCard}
+      onPress={() => {
+        router.push({
+          pathname: '/country/[id]',
+          params: {
+            id: item.id,
+          },
+        });
+      }}
+    >
+      <ImageBackground
+        source={{ uri: item.image }}
+        style={styles.destinationImage}
+        imageStyle={styles.destinationImageRadius}
+      >
+        <View style={styles.destinationOverlay} />
+
+        <View style={styles.destinationContent}>
+          <Text style={styles.destinationContinent}>
+            {item.continent}
+          </Text>
+
+          <Text style={styles.destinationCountry}>
+            {item.country}
+          </Text>
+
+          <Text style={styles.destinationCity}>
+            {item.city}
+          </Text>
+        </View>
+      </ImageBackground>
+    </TouchableOpacity>
+  );
+}
+
 export default function HomeScreen() {
   const [profile, setProfile] =
     useState<Profile | null>(null);
@@ -208,7 +359,7 @@ export default function HomeScreen() {
       if (!response.ok) {
         throw new Error(
           data?.message ||
-            'Unable to load the upcoming trip.',
+          'Unable to load the upcoming trip.',
         );
       }
 
@@ -236,45 +387,6 @@ export default function HomeScreen() {
     }, [fetchHomeData]),
   );
 
-  const handleQuickActionPress = (
-    route: string,
-  ) => {
-    router.push(route as any);
-  };
-
-  const quickActions = [
-    {
-      label: 'Itinerary',
-      short: 'I',
-      bg: '#EEF4FF',
-      route: upcomingTrip
-        ? `/itinerary/${upcomingTrip.id}`
-        : '/trips',
-    },
-    {
-      label: 'Expense',
-      short: '$',
-      bg: '#FFF4E4',
-      route: upcomingTrip
-        ? `/expenses/${upcomingTrip.id}`
-        : '/trips',
-    },
-    {
-      label: 'Checklist',
-      short: 'C',
-      bg: '#FDEBF4',
-      route: upcomingTrip
-        ? `/checklist/${upcomingTrip.id}`
-        : '/trips',
-    },
-    {
-      label: 'Map',
-      short: 'M',
-      bg: '#E5F3FF',
-      route: '/map',
-    },
-  ];
-
   return (
     <SafeAreaView style={styles.safe}>
       <AppHeader
@@ -285,7 +397,7 @@ export default function HomeScreen() {
         onAvatarPress={() =>
           router.push('/profile')
         }
-        onMenuPress={() => {}}
+        onMenuPress={() => { }}
       />
 
       <ScrollView
@@ -375,10 +487,9 @@ export default function HomeScreen() {
 
         {upcomingTrip && (
           <WeatherCard
-            title={`Weather in ${
-              upcomingTrip.location ||
+            title={`Weather in ${upcomingTrip.location ||
               'your destination'
-            }`}
+              }`}
             subtitle="Today"
             temp="29°C"
             description="Sunny"
@@ -392,20 +503,7 @@ export default function HomeScreen() {
           />
         )}
 
-        <SectionHeader
-          title="Quick Actions"
-          containerStyle={{
-            marginTop: 22,
-          }}
-        />
-
-        <QuickActionsRow
-          actions={quickActions}
-          onPressAction={
-            handleQuickActionPress
-          }
-        />
-
+        {/* Plan better trips */}
         <View style={styles.tipCard}>
           <View style={styles.tipIcon} />
 
@@ -420,6 +518,39 @@ export default function HomeScreen() {
             </Text>
           </View>
         </View>
+
+        {/* Popular destinations nằm bên dưới Plan better trips */}
+        <SectionHeader
+          title="Popular destinations"
+          actionLabel="View all"
+          onPressAction={() => {
+            // Có thể thêm router.push('/destinations') sau này
+          }}
+          containerStyle={{
+            marginTop: 26,
+            marginBottom: 16,
+          }}
+        />
+
+        <FlatList
+          data={popularDestinations}
+          horizontal
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => (
+            <PopularDestinationCard item={item} />
+          )}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={
+            styles.destinationList
+          }
+          ItemSeparatorComponent={() => (
+            <View style={{ width: 16 }} />
+          )}
+          snapToInterval={276}
+          snapToAlignment="start"
+          decelerationRate="fast"
+          bounces={false}
+        />
       </ScrollView>
 
       <View style={styles.bottomBar}>
@@ -427,10 +558,7 @@ export default function HomeScreen() {
           style={styles.tabItem}
           onPress={() => router.push('/')}
         >
-          <Home
-            size={24}
-            color="#2563EB"
-          />
+          <Home size={24} color="#2563EB" />
 
           <Text
             style={[
@@ -446,10 +574,7 @@ export default function HomeScreen() {
           style={styles.tabItem}
           onPress={() => router.push('/trips')}
         >
-          <Briefcase
-            size={24}
-            color="#9CA3AF"
-          />
+          <Briefcase size={24} color="#9CA3AF" />
 
           <Text style={styles.tabText}>
             Trips
@@ -462,20 +587,14 @@ export default function HomeScreen() {
             router.push('/booking/create')
           }
         >
-          <Plus
-            size={32}
-            color="#FFFFFF"
-          />
+          <Plus size={32} color="#FFFFFF" />
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.tabItem}
           onPress={() => router.push('/map')}
         >
-          <Map
-            size={24}
-            color="#9CA3AF"
-          />
+          <Map size={24} color="#9CA3AF" />
 
           <Text style={styles.tabText}>
             Map
@@ -488,10 +607,7 @@ export default function HomeScreen() {
             router.push('/profile')
           }
         >
-          <User
-            size={24}
-            color="#9CA3AF"
-          />
+          <User size={24} color="#9CA3AF" />
 
           <Text style={styles.tabText}>
             Profile
@@ -595,6 +711,55 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 11,
     color: '#6B7280',
+  },
+
+  destinationList: {
+    paddingRight: 16,
+  },
+
+  destinationCard: {
+    width: 260,
+    height: 330,
+    overflow: 'hidden',
+    borderRadius: 22,
+    backgroundColor: '#D1D5DB',
+  },
+
+  destinationImage: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  destinationImageRadius: {
+    borderRadius: 22,
+  },
+
+  destinationOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.30)',
+  },
+
+  destinationContent: {
+    padding: 20,
+  },
+
+  destinationContinent: {
+    marginBottom: 5,
+    color: '#E5E7EB',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+
+  destinationCountry: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+
+  destinationCity: {
+    marginTop: 4,
+    color: '#F3F4F6',
+    fontSize: 15,
   },
 
   bottomBar: {
