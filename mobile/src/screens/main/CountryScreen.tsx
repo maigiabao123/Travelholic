@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import {
   Image,
+  ImageBackground,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -11,67 +11,27 @@ import {
   View,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Ionicons,
   MaterialCommunityIcons,
 } from '@expo/vector-icons';
 
-import destinations from '@/data/countryData';
-
-type Destination = {
-  id: string;
-  name: string;
-  flag?: string;
-  subtitle?: string;
-  heroImage: any;
-
-  about?: {
-    title?: string;
-    description: string;
-    image?: any;
-  };
-
-  quickFacts?: QuickFact[];
-  attractions?: Attraction[];
-  cities?: City[];
-  foods?: Food[];
-};
-
-type QuickFact = {
-  label: string;
-  value: string;
-  iconName?: string;
-  icon?: string;
-  iconColor?: string;
-};
-
-type Attraction = {
-  id: string;
-  name: string;
-  image: any;
-  rating: number;
-  location: string;
-};
-
-type City = {
-  id: string;
-  name: string;
-  image: any;
-  description: string;
-};
-
-type Food = {
-  id: string;
-  name: string;
-  image: any;
-  description: string;
-};
+import destinations, {
+  type Country as Destination,
+  type QuickFact,
+  type Attraction,
+  type City,
+  type Food,
+} from '@/data/countryData';
 
 export default function CountryScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
 
-  const params = useLocalSearchParams<{ id?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    id?: string | string[];
+  }>();
 
   const countryId = Array.isArray(params.id)
     ? params.id[0]
@@ -94,7 +54,9 @@ export default function CountryScreen() {
           style={styles.goBackButton}
           onPress={() => router.back()}
         >
-          <Text style={styles.goBackText}>Quay lại</Text>
+          <Text style={styles.goBackText}>
+            Quay lại
+          </Text>
         </Pressable>
       </SafeAreaView>
     );
@@ -108,9 +70,11 @@ export default function CountryScreen() {
         backgroundColor="transparent"
       />
 
+      {/* ScrollView dọc chính */}
       <ScrollView
-        showsVerticalScrollIndicator={false}
+        style={styles.mainScroll}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
       >
         <DestinationHeader
           country={country}
@@ -139,10 +103,7 @@ export default function CountryScreen() {
             country.attractions.length > 0 && (
               <AttractionsSection
                 attractions={country.attractions}
-                onSeeAll={() => {
-                  // Sau này có thể điều hướng tới:
-                  // router.push(`/country/${country.id}/attractions`);
-                }}
+                onSeeAll={() => {}}
               />
             )}
 
@@ -150,10 +111,7 @@ export default function CountryScreen() {
             country.cities.length > 0 && (
               <CitiesSection
                 cities={country.cities}
-                onSeeAll={() => {
-                  // Sau này có thể điều hướng tới:
-                  // router.push(`/country/${country.id}/cities`);
-                }}
+                onSeeAll={() => {}}
               />
             )}
 
@@ -161,10 +119,7 @@ export default function CountryScreen() {
             country.foods.length > 0 && (
               <FoodsSection
                 foods={country.foods}
-                onSeeAll={() => {
-                  // Sau này có thể điều hướng tới:
-                  // router.push(`/country/${country.id}/foods`);
-                }}
+                onSeeAll={() => {}}
               />
             )}
         </View>
@@ -230,9 +185,17 @@ function DestinationHeader({
         onPress={onToggleFavourite}
       >
         <Ionicons
-          name={isFavourite ? 'heart' : 'heart-outline'}
+          name={
+            isFavourite
+              ? 'heart'
+              : 'heart-outline'
+          }
           size={30}
-          color={isFavourite ? '#EF233C' : '#111827'}
+          color={
+            isFavourite
+              ? '#EF233C'
+              : '#111827'
+          }
         />
       </Pressable>
 
@@ -275,7 +238,11 @@ function AboutSection({
       <View
         style={[
           styles.aboutTextContainer,
-          { width: width * 0.53 },
+          {
+            width: data.image
+              ? width * 0.53
+              : width - 104,
+          },
         ]}
       >
         <Text style={styles.aboutTitle}>
@@ -312,8 +279,8 @@ function QuickFacts({
 }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>
-        Quick Facts
+      <Text style={styles.sectionTitleWithPadding}>
+        Basic Information
       </Text>
 
       <ScrollView
@@ -331,7 +298,9 @@ function QuickFacts({
                 <MaterialCommunityIcons
                   name={fact.iconName as any}
                   size={28}
-                  color={fact.iconColor || '#7C3AED'}
+                  color={
+                    fact.iconColor || '#7C3AED'
+                  }
                 />
               ) : (
                 <Text style={styles.factEmoji}>
@@ -401,6 +370,7 @@ function AttractionsSection({
                 size={16}
                 color="#FF8A00"
               />
+
               <Text style={styles.ratingText}>
                 {attraction.rating}
               </Text>
@@ -412,6 +382,7 @@ function AttractionsSection({
                 size={16}
                 color="#374151"
               />
+
               <Text
                 style={styles.locationText}
                 numberOfLines={1}
@@ -428,6 +399,7 @@ function AttractionsSection({
 
 /* =========================================
    CITIES
+   Nằm ngang, ảnh làm background
 ========================================= */
 
 function CitiesSection({
@@ -450,23 +422,22 @@ function CitiesSection({
         contentContainerStyle={styles.horizontalContent}
       >
         {cities.map((city) => (
-          <View key={city.id} style={styles.cityCard}>
-            <Image
+          <View
+            key={city.id}
+            style={styles.cityCard}
+          >
+            <ImageBackground
               source={city.image}
-              style={styles.cityImage}
+              style={styles.cityBackground}
+              imageStyle={styles.cityBackgroundImage}
               resizeMode="cover"
-            />
-
-            <Text style={styles.cityName}>
-              {city.name}
-            </Text>
-
-            <Text
-              style={styles.cityDescription}
-              numberOfLines={3}
             >
-              {city.description}
-            </Text>
+              <View style={styles.cityOverlay} />
+
+              <Text style={styles.cityName}>
+                {city.name}
+              </Text>
+            </ImageBackground>
           </View>
         ))}
       </ScrollView>
@@ -476,6 +447,7 @@ function CitiesSection({
 
 /* =========================================
    FOODS
+   Nằm ngang, không có description
 ========================================= */
 
 function FoodsSection({
@@ -498,22 +470,21 @@ function FoodsSection({
         contentContainerStyle={styles.foodsContent}
       >
         {foods.map((food) => (
-          <View key={food.id} style={styles.foodCard}>
+          <View
+            key={food.id}
+            style={styles.foodCard}
+          >
             <Image
               source={food.image}
               style={styles.foodImage}
               resizeMode="cover"
             />
 
-            <Text style={styles.foodName}>
-              {food.name}
-            </Text>
-
             <Text
-              style={styles.foodDescription}
-              numberOfLines={2}
+              style={styles.foodName}
+              numberOfLines={1}
             >
-              {food.description}
+              {food.name}
             </Text>
           </View>
         ))}
@@ -540,7 +511,7 @@ function SectionHeader({
       </Text>
 
       <Pressable onPress={onSeeAll}>
-        <Text style={styles.seeAll}>See all</Text>
+        {/* Thêm nút See all sau nếu cần */}
       </Pressable>
     </View>
   );
@@ -612,8 +583,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
+  mainScroll: {
+    flex: 1,
+  },
+
   scrollContent: {
-    paddingBottom: 120,
+    paddingBottom: 150,
   },
 
   content: {
@@ -704,14 +679,14 @@ const styles = StyleSheet.create({
   },
 
   flag: {
-    fontSize: 38,
     marginLeft: 10,
+    fontSize: 38,
   },
 
   subtitle: {
+    marginTop: 5,
     color: '#FFFFFF',
     fontSize: 20,
-    marginTop: 5,
   },
 
   aboutCard: {
@@ -738,10 +713,10 @@ const styles = StyleSheet.create({
   },
 
   aboutTitle: {
+    marginBottom: 16,
     color: '#111827',
     fontSize: 20,
     fontWeight: '800',
-    marginBottom: 16,
   },
 
   aboutDescription: {
@@ -773,10 +748,12 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 
-  seeAll: {
-    color: '#087DFF',
-    fontSize: 16,
-    fontWeight: '700',
+  sectionTitleWithPadding: {
+    marginBottom: 10,
+    paddingHorizontal: 29,
+    color: '#111827',
+    fontSize: 20,
+    fontWeight: '800',
   },
 
   horizontalContent: {
@@ -853,10 +830,10 @@ const styles = StyleSheet.create({
   },
 
   ratingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 10,
     marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   ratingText: {
@@ -866,10 +843,10 @@ const styles = StyleSheet.create({
   },
 
   locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginHorizontal: 10,
     marginTop: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 
   locationText: {
@@ -880,41 +857,50 @@ const styles = StyleSheet.create({
   },
 
   cityCard: {
-    width: 140,
-    minHeight: 190,
-    marginRight: 12,
-    borderRadius: 14,
+    width: 190,
+    height: 270,
+    marginRight: 14,
+    borderRadius: 22,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E5E7EB',
     shadowColor: '#000000',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: {
       width: 0,
-      height: 3,
+      height: 4,
     },
-    elevation: 3,
+    elevation: 5,
   },
 
-  cityImage: {
-    width: '100%',
-    height: 106,
+  cityBackground: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+
+  cityBackgroundImage: {
+    borderRadius: 22,
+  },
+
+  cityOverlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: 'rgba(0, 0, 0, 0.28)',
   },
 
   cityName: {
-    marginHorizontal: 10,
-    marginTop: 10,
-    color: '#111827',
-    fontSize: 15,
+    zIndex: 1,
+    marginHorizontal: 16,
+    marginBottom: 18,
+    color: '#FFFFFF',
+    fontSize: 28,
     fontWeight: '800',
-  },
-
-  cityDescription: {
-    marginHorizontal: 10,
-    marginTop: 5,
-    color: '#4B5563',
-    fontSize: 12,
-    lineHeight: 18,
+    textAlign: 'center',
+    textShadowColor: 'rgba(0, 0, 0, 0.55)',
+    textShadowOffset: {
+      width: 1,
+      height: 2,
+    },
+    textShadowRadius: 4,
   },
 
   foodsContent: {
@@ -934,17 +920,11 @@ const styles = StyleSheet.create({
   },
 
   foodName: {
+    maxWidth: 120,
     marginTop: 10,
     color: '#111827',
     fontSize: 15,
     fontWeight: '800',
-  },
-
-  foodDescription: {
-    marginTop: 5,
-    color: '#4B5563',
-    fontSize: 12,
-    lineHeight: 18,
     textAlign: 'center',
   },
 
