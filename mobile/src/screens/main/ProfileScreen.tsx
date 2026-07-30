@@ -363,7 +363,7 @@ export default function ProfileScreen() {
 
           <TouchableOpacity
             style={styles.tabItem}
-            onPress={() => router.push('/map')}
+            onPress={() => router.push('/Wishlist')}
           >
             <Map
               size={24}
@@ -381,7 +381,7 @@ export default function ProfileScreen() {
                   styles.activeTabLabel,
               ]}
             >
-              Itinerary
+              Wishlist
             </Text>
           </TouchableOpacity>
 

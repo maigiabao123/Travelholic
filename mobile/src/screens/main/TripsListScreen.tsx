@@ -261,10 +261,10 @@ export default function TripsListScreen() {
 
         <TouchableOpacity
           style={styles.tabItem}
-          onPress={() => router.push('/map')}
+          onPress={() => router.push('/Wishlist')}
         >
           <Map size={24} color="#9CA3AF" />
-          <Text style={styles.tabText}>Map</Text>
+          <Text style={styles.tabText}>Wishlist</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
